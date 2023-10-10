@@ -16,6 +16,7 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
+
  
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
@@ -55,7 +56,37 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
-        pass
+        weights = []
+        # ----- For each particle
+        for pose in self.particlecloud.poses:
+            weights.append(self.sensor_model.get_weight(scan, pose))
+
+        # ----- Normalise weights
+        weight_sum = sum(weights)
+        weights = [w / weight_sum for w in weights]
+
+        # ----- Resample
+        new_particles = []
+
+        # ----- For each particle
+        for i in range(100):
+            # ----- Choose a random particle
+            r = random()
+            c = 0
+            for j in range(len(weights)):
+                c += weights[j]
+                if c > r:
+                    selected_pose = self.particlecloud.poses[j]
+
+                    # ----- Add noise
+                    selected_pose.position.x += random() * 0.1
+                    selected_pose.position.y += random() * 0.1
+                    selected_pose.orientation = rotateQuaternion(selected_pose.orientation, random() * 0.1)
+
+                    new_particles.append(selected_pose)
+                    break
+
+        self.particlecloud.poses = new_particles
 
     def estimate_pose(self):
         """
