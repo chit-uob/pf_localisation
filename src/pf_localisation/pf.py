@@ -35,7 +35,14 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.PoseArray) poses of the particles
         """
-        pass
+        #initialising array
+        partical_cloud = PoseArray()
+        partical_cloud.poses = [initialpose for _ in range(self.NUMBER_PREDICTED_READINGS)]
+        
+
+        #Adding noise
+        self.particlecloud = partical_cloud
+        return partical_cloud
 
  
     
