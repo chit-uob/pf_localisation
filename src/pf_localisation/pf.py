@@ -80,22 +80,20 @@ class PFLocaliser(PFLocaliserBase):
         # ----- Resample
         new_particles = []
 
-        # ----- For each particle
+        # ----- Pick 100 particles from the old ones, with replacement
         for i in range(100):
-            # ----- Choose a random particle
+            # ----- Pick a random particle, weighted by the weights
             r = random()
-            c = 0
+            total = 0.0
             for j in range(len(weights)):
-                c += weights[j]
-                if c > r:
-                    selected_pose = self.particlecloud.poses[j]
-
-                    # ----- Add noise
-                    selected_pose.position.x += (random() * 0.1 - 0.05)
-                    selected_pose.position.y += (random() * 0.1 - 0.05)
-                    selected_pose.orientation = rotateQuaternion(selected_pose.orientation, (random() * 0.1 - 0.05))
-
-                    new_particles.append(selected_pose)
+                total += weights[j]
+                if total > r:
+                    # ----- add noise to the particle
+                    new_pose = Pose()
+                    new_pose.position.x = self.particlecloud.poses[j].position.x + (random() * 0.1 - 0.05)
+                    new_pose.position.y = self.particlecloud.poses[j].position.y + (random() * 0.1 - 0.05)
+                    new_pose.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, (random() * 0.1 - 0.05))
+                    new_particles.append(new_pose)
                     break
 
         self.particlecloud.poses = new_particles
