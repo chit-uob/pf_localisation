@@ -16,7 +16,9 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
-
+        self.ODOM_ROTATION_NOISE = 0 		# Odometry model rotation noise
+        self.ODOM_TRANSLATION_NOISE = 0 	# Odometry x axis (forward) noise
+        self.ODOM_DRIFT_NOISE = 0 			# Odometry y axis (side-side) noise
  
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
@@ -37,14 +39,24 @@ class PFLocaliser(PFLocaliserBase):
             | (geometry_msgs.msg.PoseArray) poses of the particles
         """
         #initialising array
-        partical_cloud = PoseArray()
-        partical_cloud.poses = [initialpose for _ in range(self.NUMBER_PREDICTED_READINGS)]
-        
+        self.particlecloud = PoseArray()
+        self.particlecloud.header.frame_id = 'map'
+        self.particlecloud.header.stamp = rospy.Time.now()
+        self.particlecloud.poses = []
 
-        #Adding noise
-        self.particlecloud = partical_cloud
-        return partical_cloud
+        #initialising pose
+        self.initialpose = initialpose
 
+        # ----- For each particle
+        for i in range(100):
+            # ----- Create a new pose
+            new_pose = Pose()
+            new_pose.position.x = initialpose.pose.pose.position.x + random() * 0.1
+            new_pose.position.y = initialpose.pose.pose.position.y + random() * 0.1
+            new_pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, random() * 0.1)
+            self.particlecloud.poses.append(new_pose)
+
+        return self.particlecloud
  
     
     def update_particle_cloud(self, scan):
@@ -104,4 +116,4 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) robot's estimated pose.
          """
-        pass
+        return self.particlecloud.poses[0]
