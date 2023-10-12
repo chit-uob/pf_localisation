@@ -1,3 +1,4 @@
 src/pf_localisation/__pycache__
 src/laser_trace/compile.sh
 src/pf_localisation/laser_trace.so
+scripts/node.py
