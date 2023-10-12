@@ -16,9 +16,9 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
-        self.ODOM_ROTATION_NOISE = 0 		# Odometry model rotation noise
-        self.ODOM_TRANSLATION_NOISE = 0 	# Odometry x axis (forward) noise
-        self.ODOM_DRIFT_NOISE = 0 			# Odometry y axis (side-side) noise
+        self.ODOM_ROTATION_NOISE = 0.01 		# Odometry model rotation noise
+        self.ODOM_TRANSLATION_NOISE = 0.01 	# Odometry x axis (forward) noise
+        self.ODOM_DRIFT_NOISE = 0.01 			# Odometry y axis (side-side) noise
  
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
@@ -51,9 +51,9 @@ class PFLocaliser(PFLocaliserBase):
         for i in range(100):
             # ----- Create a new pose
             new_pose = Pose()
-            new_pose.position.x = initialpose.pose.pose.position.x + (random() * 0.1 - 0.05)
-            new_pose.position.y = initialpose.pose.pose.position.y + (random() * 0.1 - 0.05)
-            new_pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, (random() * 0.1 - 0.05))
+            new_pose.position.x = initialpose.pose.pose.position.x + (random() * 1 - 0.5)
+            new_pose.position.y = initialpose.pose.pose.position.y + (random() * 1 - 0.5)
+            new_pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, (random() * 1 - 0.5))
             self.particlecloud.poses.append(new_pose)
 
         return self.particlecloud
@@ -90,8 +90,8 @@ class PFLocaliser(PFLocaliserBase):
                 if total > r:
                     # ----- add noise to the particle
                     new_pose = Pose()
-                    new_pose.position.x = self.particlecloud.poses[j].position.x + (random() * 0.1 - 0.05)
-                    new_pose.position.y = self.particlecloud.poses[j].position.y + (random() * 0.1 - 0.05)
+                    new_pose.position.x = self.particlecloud.poses[j].position.x + (random() * 0.1 - 0.05) * 3
+                    new_pose.position.y = self.particlecloud.poses[j].position.y + (random() * 0.1 - 0.05) * 3
                     new_pose.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, (random() * 0.1 - 0.05))
                     new_particles.append(new_pose)
                     break
