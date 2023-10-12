@@ -51,9 +51,9 @@ class PFLocaliser(PFLocaliserBase):
         for i in range(100):
             # ----- Create a new pose
             new_pose = Pose()
-            new_pose.position.x = initialpose.pose.pose.position.x + random() * 0.1
-            new_pose.position.y = initialpose.pose.pose.position.y + random() * 0.1
-            new_pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, random() * 0.1)
+            new_pose.position.x = initialpose.pose.pose.position.x + (random() * 0.1 - 0.05)
+            new_pose.position.y = initialpose.pose.pose.position.y + (random() * 0.1 - 0.05)
+            new_pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, (random() * 0.1 - 0.05))
             self.particlecloud.poses.append(new_pose)
 
         return self.particlecloud
@@ -91,9 +91,9 @@ class PFLocaliser(PFLocaliserBase):
                     selected_pose = self.particlecloud.poses[j]
 
                     # ----- Add noise
-                    selected_pose.position.x += random() * 0.1
-                    selected_pose.position.y += random() * 0.1
-                    selected_pose.orientation = rotateQuaternion(selected_pose.orientation, random() * 0.1)
+                    selected_pose.position.x += (random() * 0.1 - 0.05)
+                    selected_pose.position.y += (random() * 0.1 - 0.05)
+                    selected_pose.orientation = rotateQuaternion(selected_pose.orientation, (random() * 0.1 - 0.05))
 
                     new_particles.append(selected_pose)
                     break
