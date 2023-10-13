@@ -23,7 +23,7 @@ class PFLocaliser(PFLocaliserBase):
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         self.INITIAL_NOISE = 5                # Noise in initial particle cloud
-        self.SCAN_SAMPLE_NOISE = 1           # Laser scan sampling noise
+        self.SCAN_SAMPLE_NOISE = 0.1           # Laser scan sampling noise
         self.UPDATE_PARTICLE_COUNT = 100    # Number of particles to update
         
        
@@ -95,6 +95,8 @@ class PFLocaliser(PFLocaliserBase):
                 c += normalised_weights[i]
             new_particlecloud.poses.append(self.add_noise(self.particlecloud.poses[i]))
 
+        # print(len(new_particlecloud.poses))
+        # print([pose.position.x for pose in new_particlecloud.poses])
         self.particlecloud = new_particlecloud
 
 
@@ -109,12 +111,11 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) pose with noise added
         """
-        # ----- Add noise to pose
-        pose.position.x += (random() * 1 - 0.5) * self.ODOM_TRANSLATION_NOISE
-        pose.position.y += (random() * 1 - 0.5) * self.ODOM_DRIFT_NOISE
-        pose.orientation = rotateQuaternion(pose.orientation, (random() * 1 - 0.5) * self.ODOM_ROTATION_NOISE)
-
-        return pose
+        new_pose = Pose()
+        new_pose.position.x = pose.position.x + (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE
+        new_pose.position.y = pose.position.y + (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE
+        new_pose.orientation = rotateQuaternion(pose.orientation, (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE)
+        return new_pose
 
     def estimate_pose(self):
         """
