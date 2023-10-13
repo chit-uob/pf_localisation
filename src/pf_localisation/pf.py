@@ -24,6 +24,7 @@ class PFLocaliser(PFLocaliserBase):
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         self.INITIAL_NOISE = 5                # Noise in initial particle cloud
         self.SCAN_SAMPLE_NOISE = 1           # Laser scan sampling noise
+        self.UPDATE_PARTICLE_COUNT = 100    # Number of particles to update
         
        
     def initialise_particle_cloud(self, initialpose):
@@ -79,26 +80,46 @@ class PFLocaliser(PFLocaliserBase):
         weight_sum = sum(weights)
         weights = [w / weight_sum for w in weights]
 
-        # ----- Resample
         new_particles = []
 
-        # ----- Pick 100 particles from the old ones, with replacement
-        for i in range(100):
-            # ----- Pick a random particle, weighted by the weights
-            r = random()
-            total = 0.0
-            for j in range(len(weights)):
-                total += weights[j]
-                if total > r:
-                    # ----- add noise to the particle
-                    new_pose = Pose()
-                    new_pose.position.x = self.particlecloud.poses[j].position.x + (random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE
-                    new_pose.position.y = self.particlecloud.poses[j].position.y + (random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE
-                    new_pose.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, (random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE)
-                    new_particles.append(new_pose)
-                    break
+        # ----- Generate cumulative sum of weights
+        cumulative_weights = [weights[0]]
+        for i in range(1, len(weights)):
+            cumulative_weights.append(cumulative_weights[i - 1] + weights[i])
+
+        # ----- Initialise thresholds, a uniform distribution from 0 to 1 with step size 1 / self.UPDATE_PARTICLE_COUNT
+        thresholds = [i / self.UPDATE_PARTICLE_COUNT for i in range(self.UPDATE_PARTICLE_COUNT)]
+
+        # ----- Draw samples
+        i = 0
+        for j in range(self.UPDATE_PARTICLE_COUNT):
+            while thresholds[j] > cumulative_weights[i]:
+                if i < len(weights) - 1:
+                    i += 1
+            new_particles.append(self.add_noise(self.particlecloud.poses[i]))
+            if j < self.UPDATE_PARTICLE_COUNT - 1:
+                thresholds[j+1] = thresholds[j] + weights[i]
+
+        print(len(new_particles))
+        print([p.position.x for p in new_particles])
 
         self.particlecloud.poses = new_particles
+
+    def add_noise(self, pose):
+        """
+        Add noise to a given pose.
+
+        :Args:
+            | pose (geometry_msgs.msg.Pose): pose to add noise to
+        :Return:
+            | (geometry_msgs.msg.Pose) pose with noise added
+        """
+        # ----- Add noise to pose
+        pose.position.x += (random() * 1 - 0.5) * self.ODOM_TRANSLATION_NOISE
+        pose.position.y += (random() * 1 - 0.5) * self.ODOM_DRIFT_NOISE
+        pose.orientation = rotateQuaternion(pose.orientation, (random() * 1 - 0.5) * self.ODOM_ROTATION_NOISE)
+
+        return pose
 
     def estimate_pose(self):
         """
