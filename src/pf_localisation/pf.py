@@ -45,6 +45,7 @@ class PFLocaliser(PFLocaliserBase):
         self.particlecloud = partical_cloud
         return partical_cloud
 
+
  
     
     def update_particle_cloud(self, scan):
@@ -87,6 +88,7 @@ class PFLocaliser(PFLocaliserBase):
                     break
 
         self.particlecloud.poses = new_particles
+
 
     def estimate_pose(self):
         """
