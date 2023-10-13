@@ -4,9 +4,10 @@ import math
 import rospy
 
 from . util import rotateQuaternion, getHeading
-from random import random
+import random
 
 from time import time
+import numpy as np
 
 
 class PFLocaliser(PFLocaliserBase):
@@ -16,14 +17,17 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
-        self.ODOM_ROTATION_NOISE = 0.01 		# Odometry model rotation noise
-        self.ODOM_TRANSLATION_NOISE = 0.01 	# Odometry x axis (forward) noise
-        self.ODOM_DRIFT_NOISE = 0.01 			# Odometry y axis (side-side) noise
+        self.POSITION_STD_DEV = 8
+        self.ORIENTATION_STD_DEV = 8
+        # self.ODOM_ROTATION_NOISE = 0.01 		# Odometry model rotation noise
+        # self.ODOM_TRANSLATION_NOISE = 0.01 	# Odometry x axis (forward) noise
+        # self.ODOM_DRIFT_NOISE = 0.01 			# Odometry y axis (side-side) noise
  
-        # ----- Sensor model parameters
+        # # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
-        self.INITIAL_NOISE = 5                # Noise in initial particle cloud
+        # self.INITIAL_NOISE = 5                # Noise in initial particle cloud
         self.SCAN_SAMPLE_NOISE = 1           # Laser scan sampling noise
+
         
        
     def initialise_particle_cloud(self, initialpose):
@@ -41,24 +45,32 @@ class PFLocaliser(PFLocaliserBase):
             | (geometry_msgs.msg.PoseArray) poses of the particles
         """
         #initialising array
-        self.particlecloud = PoseArray()
-        self.particlecloud.header.frame_id = 'map'
-        self.particlecloud.header.stamp = rospy.Time.now()
-        self.particlecloud.poses = []
+        particlecloud = PoseArray()
+        # self.particlecloud.header.frame_id = 'map'
+        # self.particlecloud.header.stamp = rospy.Time.now()
+        # self.particlecloud.poses = []
 
         #initialising pose
-        self.initialpose = initialpose
+        initial_orientation = initialpose.pose.pose.orientation
+        initial_position = initialpose.pose.pose.position
 
         # ----- For each particle
-        for i in range(100):
+        for i in range(2000):
             # ----- Create a new pose
             new_pose = Pose()
-            new_pose.position.x = initialpose.pose.pose.position.x + (random() * 1 - 0.5) * self.INITIAL_NOISE
-            new_pose.position.y = initialpose.pose.pose.position.y + (random() * 1 - 0.5) * self.INITIAL_NOISE
-            new_pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, (random() * 1 - 0.5) * self.INITIAL_NOISE)
-            self.particlecloud.poses.append(new_pose)
+            new_pose.position.x = initial_position.x + random.gauss(0, self.POSITION_STD_DEV)
+            new_pose.position.y = initial_position.y + random.gauss(0, self.POSITION_STD_DEV)
+            # new_pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, (random() * 1 - 0.5) * self.INITIAL_NOISE)
+            
+            initial_yaw = getHeading(initial_orientation)
+            noisy_yaw = initial_yaw + random.gauss(0, self.ORIENTATION_STD_DEV)
 
-        return self.particlecloud
+            q_noisy = rotateQuaternion(initial_orientation, noisy_yaw)
+            new_pose.orientation = q_noisy
+
+            particlecloud.poses.append(new_pose)
+
+        return particlecloud
  
     
     def update_particle_cloud(self, scan):
@@ -83,18 +95,18 @@ class PFLocaliser(PFLocaliserBase):
         new_particles = []
 
         # ----- Pick 100 particles from the old ones, with replacement
-        for i in range(100):
+        for i in range(1000):
             # ----- Pick a random particle, weighted by the weights
-            r = random()
+            r = random.random()
             total = 0.0
             for j in range(len(weights)):
                 total += weights[j]
                 if total > r:
                     # ----- add noise to the particle
                     new_pose = Pose()
-                    new_pose.position.x = self.particlecloud.poses[j].position.x + (random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE
-                    new_pose.position.y = self.particlecloud.poses[j].position.y + (random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE
-                    new_pose.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, (random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE)
+                    new_pose.position.x = self.particlecloud.poses[j].position.x + (random.random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE
+                    new_pose.position.y = self.particlecloud.poses[j].position.y + (random.random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE
+                    new_pose.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, (random.random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE)
                     new_particles.append(new_pose)
                     break
 
