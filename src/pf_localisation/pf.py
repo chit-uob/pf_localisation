@@ -4,7 +4,7 @@ import math
 import rospy
 
 from . util import rotateQuaternion, getHeading
-from random import random
+from random import random, uniform
 
 from time import time
 
@@ -78,32 +78,27 @@ class PFLocaliser(PFLocaliserBase):
 
         # ----- Normalise weights
         weight_sum = sum(weights)
-        weights = [w / weight_sum for w in weights]
+        normalised_weights = [weight / weight_sum for weight in weights]
 
-        new_particles = []
-
-        # ----- Generate cumulative sum of weights
-        cumulative_weights = [weights[0]]
-        for i in range(1, len(weights)):
-            cumulative_weights.append(cumulative_weights[i - 1] + weights[i])
-
-        # ----- Initialise thresholds, a uniform distribution from 0 to 1 with step size 1 / self.UPDATE_PARTICLE_COUNT
-        thresholds = [i / self.UPDATE_PARTICLE_COUNT for i in range(self.UPDATE_PARTICLE_COUNT)]
-
-        # ----- Draw samples
+        # ----- Do systematic resampling
+        new_particlecloud = PoseArray()
+        new_particlecloud.header.frame_id = 'map'
+        new_particlecloud.header.stamp = rospy.Time.now()
+        new_particlecloud.poses = []
+        r = uniform(0, 1.0 / self.UPDATE_PARTICLE_COUNT)
+        c = normalised_weights[0]
         i = 0
-        for j in range(self.UPDATE_PARTICLE_COUNT):
-            while thresholds[j] > cumulative_weights[i]:
-                if i < len(weights) - 1:
-                    i += 1
-            new_particles.append(self.add_noise(self.particlecloud.poses[i]))
-            if j < self.UPDATE_PARTICLE_COUNT - 1:
-                thresholds[j+1] = thresholds[j] + weights[i]
+        for m in range(self.UPDATE_PARTICLE_COUNT):
+            u = r + m / self.UPDATE_PARTICLE_COUNT
+            while u > c:
+                i += 1
+                c += normalised_weights[i]
+            new_particlecloud.poses.append(self.add_noise(self.particlecloud.poses[i]))
 
-        print(len(new_particles))
-        print([p.position.x for p in new_particles])
+        self.particlecloud = new_particlecloud
 
-        self.particlecloud.poses = new_particles
+
+
 
     def add_noise(self, pose):
         """
