@@ -27,9 +27,11 @@ class PFLocaliser(PFLocaliserBase):
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         # self.INITIAL_NOISE = 5                # Noise in initial particle cloud
         self.SCAN_SAMPLE_NOISE = 1           # Laser scan sampling noise
+        self.INITIAL_NOISE = 5                # Noise in initial particle cloud
+        self.SCAN_SAMPLE_NOISE = 0.1           # Laser scan sampling noise
+        self.UPDATE_PARTICLE_COUNT = 100    # Number of particles to update
 
 
-       
     def initialise_particle_cloud(self, initialpose):
         """
         Set particle cloud to initialpose plus noise
@@ -89,28 +91,44 @@ class PFLocaliser(PFLocaliserBase):
 
         # ----- Normalise weights
         weight_sum = sum(weights)
-        weights = [w / weight_sum for w in weights]
+        normalised_weights = [weight / weight_sum for weight in weights]
 
-        # ----- Resample
-        new_particles = []
+        # ----- Do systematic resampling
+        new_particlecloud = PoseArray()
+        new_particlecloud.header.frame_id = 'map'
+        new_particlecloud.header.stamp = rospy.Time.now()
+        new_particlecloud.poses = []
+        r = uniform(0, 1.0 / self.UPDATE_PARTICLE_COUNT)
+        c = normalised_weights[0]
+        i = 0
+        for m in range(self.UPDATE_PARTICLE_COUNT):
+            u = r + m / self.UPDATE_PARTICLE_COUNT
+            while u > c:
+                i += 1
+                c += normalised_weights[i]
+            new_particlecloud.poses.append(self.add_noise(self.particlecloud.poses[i]))
 
-        # ----- Pick 100 particles from the old ones, with replacement
-        for i in range(1000):
-            # ----- Pick a random particle, weighted by the weights
-            r = random.random()
-            total = 0.0
-            for j in range(len(weights)):
-                total += weights[j]
-                if total > r:
-                    # ----- add noise to the particle
-                    new_pose = Pose()
-                    new_pose.position.x = self.particlecloud.poses[j].position.x + (random.random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE
-                    new_pose.position.y = self.particlecloud.poses[j].position.y + (random.random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE
-                    new_pose.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, (random.random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE)
-                    new_particles.append(new_pose)
-                    break
+        # print(len(new_particlecloud.poses))
+        # print([pose.position.x for pose in new_particlecloud.poses])
+        self.particlecloud = new_particlecloud
 
-        self.particlecloud.poses = new_particles
+
+
+
+    def add_noise(self, pose):
+        """
+        Add noise to a given pose.
+
+        :Args:
+            | pose (geometry_msgs.msg.Pose): pose to add noise to
+        :Return:
+            | (geometry_msgs.msg.Pose) pose with noise added
+        """
+        new_pose = Pose()
+        new_pose.position.x = pose.position.x + (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE
+        new_pose.position.y = pose.position.y + (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE
+        new_pose.orientation = rotateQuaternion(pose.orientation, (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE)
+        return new_pose
 
 
     def estimate_pose(self):
