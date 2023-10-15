@@ -17,6 +17,7 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
+        self.INITIAL_PARTICLE_COUNT = 2000		# Number of particles to use
         self.POSITION_STD_DEV = 8
         self.ORIENTATION_STD_DEV = 8
         self.ODOM_ROTATION_NOISE = 0.01 		# Odometry model rotation noise
@@ -25,11 +26,9 @@ class PFLocaliser(PFLocaliserBase):
  
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
-        # self.INITIAL_NOISE = 5                # Noise in initial particle cloud
-        self.SCAN_SAMPLE_NOISE = 1           # Laser scan sampling noise
-        self.INITIAL_NOISE = 5                # Noise in initial particle cloud
         self.SCAN_SAMPLE_NOISE = 0.1           # Laser scan sampling noise
-        self.UPDATE_PARTICLE_COUNT = 100    # Number of particles to update
+        self.SCAN_ORIENTATION_NOISE = 0.1      # Laser scan orientation noise
+        self.UPDATE_PARTICLE_COUNT = 1000    # Number of particles to update
 
 
     def initialise_particle_cloud(self, initialpose):
@@ -48,27 +47,18 @@ class PFLocaliser(PFLocaliserBase):
         """
         #initialising array
         particlecloud = PoseArray()
-        # self.particlecloud.header.frame_id = 'map'
-        # self.particlecloud.header.stamp = rospy.Time.now()
-        # self.particlecloud.poses = []
 
         #initialising pose
         initial_orientation = initialpose.pose.pose.orientation
         initial_position = initialpose.pose.pose.position
 
         # ----- For each particle
-        for i in range(2000):
+        for i in range(self.INITIAL_PARTICLE_COUNT):
             # ----- Create a new pose
             new_pose = Pose()
             new_pose.position.x = initial_position.x + random.gauss(0, self.POSITION_STD_DEV)
             new_pose.position.y = initial_position.y + random.gauss(0, self.POSITION_STD_DEV)
-            # new_pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, (random() * 1 - 0.5) * self.INITIAL_NOISE)
-
-            initial_yaw = getHeading(initial_orientation)
-            noisy_yaw = initial_yaw + random.gauss(0, self.ORIENTATION_STD_DEV)
-
-            q_noisy = rotateQuaternion(initial_orientation, noisy_yaw)
-            new_pose.orientation = q_noisy
+            new_pose.orientation = rotateQuaternion(initial_orientation, random.gauss(0, self.ORIENTATION_STD_DEV))
 
             particlecloud.poses.append(new_pose)
 
@@ -95,10 +85,8 @@ class PFLocaliser(PFLocaliserBase):
 
         # ----- Do systematic resampling
         new_particlecloud = PoseArray()
-        new_particlecloud.header.frame_id = 'map'
-        new_particlecloud.header.stamp = rospy.Time.now()
         new_particlecloud.poses = []
-        r = uniform(0, 1.0 / self.UPDATE_PARTICLE_COUNT)
+        r = random.uniform(0, 1.0 / self.UPDATE_PARTICLE_COUNT)
         c = normalised_weights[0]
         i = 0
         for m in range(self.UPDATE_PARTICLE_COUNT):
@@ -108,8 +96,6 @@ class PFLocaliser(PFLocaliserBase):
                 c += normalised_weights[i]
             new_particlecloud.poses.append(self.add_noise(self.particlecloud.poses[i]))
 
-        # print(len(new_particlecloud.poses))
-        # print([pose.position.x for pose in new_particlecloud.poses])
         self.particlecloud = new_particlecloud
 
 
@@ -125,9 +111,9 @@ class PFLocaliser(PFLocaliserBase):
             | (geometry_msgs.msg.Pose) pose with noise added
         """
         new_pose = Pose()
-        new_pose.position.x = pose.position.x + (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE
-        new_pose.position.y = pose.position.y + (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE
-        new_pose.orientation = rotateQuaternion(pose.orientation, (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE)
+        new_pose.position.x = pose.position.x + random.gauss(0, self.SCAN_SAMPLE_NOISE)
+        new_pose.position.y = pose.position.y + random.gauss(0, self.SCAN_SAMPLE_NOISE)
+        new_pose.orientation = rotateQuaternion(pose.orientation, random.gauss(0, self.SCAN_ORIENTATION_NOISE))
         return new_pose
 
 
