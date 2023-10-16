@@ -206,9 +206,10 @@ class PFLocaliser(PFLocaliserBase):
 
         def estimate_pose(self):
 
-        """
-        Abbas
-        """
+            """
+            Abbas
+            """
+
         num_particles = len(self.particlecloud.poses)
 
         if num_particles == 0:
