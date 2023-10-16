@@ -101,19 +101,33 @@ class PFLocaliser(PFLocaliserBase):
 
 
 
-    def add_noise(self, pose):
+
+
+    def sample_with_replacement(self, original_poses, weights):
+        for i in range(self.UPDATE_PARTICLE_COUNT):
+            # ----- Choose a random particle
+            random_particle = np.random.choice(self.particlecloud.poses, p=normalised_weights)
+
+            # ----- Add a copy of the random particle to the new particle cloud
+            new_particlecloud.poses.append(self.add_noise(random_particle))
+
+
+
+    def add_noise(self, pose, coord_sd=self.SCAN_SAMPLE_NOISE, orient_sd=self.SCAN_ORIENTATION_NOISE):
         """
-        Add noise to a given pose.
+        Add noise to a pose
 
         :Args:
             | pose (geometry_msgs.msg.Pose): pose to add noise to
+            | coord_sd (double): standard deviation of noise to add to position
+            | orient_sd (double): standard deviation of noise to add to orientation
         :Return:
-            | (geometry_msgs.msg.Pose) pose with noise added
+            | (geometry_msgs.msg.Pose) new pose
         """
         new_pose = Pose()
-        new_pose.position.x = pose.position.x + random.gauss(0, self.SCAN_SAMPLE_NOISE)
-        new_pose.position.y = pose.position.y + random.gauss(0, self.SCAN_SAMPLE_NOISE)
-        new_pose.orientation = rotateQuaternion(pose.orientation, random.gauss(0, self.SCAN_ORIENTATION_NOISE))
+        new_pose.position.x = pose.position.x + random.gauss(0, coord_sd)
+        new_pose.position.y = pose.position.y + random.gauss(0, coord_sd)
+        new_pose.orientation = rotateQuaternion(pose.orientation, random.gauss(0, orient_sd))
         return new_pose
 
 
