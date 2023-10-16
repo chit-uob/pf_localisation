@@ -26,8 +26,8 @@ class PFLocaliser(PFLocaliserBase):
  
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
-        self.SCAN_SAMPLE_NOISE = 0.1           # Laser scan sampling noise
-        self.SCAN_ORIENTATION_NOISE = 0.1      # Laser scan orientation noise
+        self.UPDATE_COORD_SD = 0.1           # Laser scan sampling noise
+        self.UPDATE_ORIENT_SD = 0.1      # Laser scan orientation noise
         self.UPDATE_PARTICLE_COUNT = 1000    # Number of particles to update
 
 
@@ -83,51 +83,57 @@ class PFLocaliser(PFLocaliserBase):
         weight_sum = sum(weights)
         normalised_weights = [weight / weight_sum for weight in weights]
 
-        # ----- Do systematic resampling
+        # ----- Do resampling
         new_particlecloud = PoseArray()
-        new_particlecloud.poses = []
-        r = random.uniform(0, 1.0 / self.UPDATE_PARTICLE_COUNT)
-        c = normalised_weights[0]
-        i = 0
-        for m in range(self.UPDATE_PARTICLE_COUNT):
-            u = r + m / self.UPDATE_PARTICLE_COUNT
-            while u > c:
-                i += 1
-                c += normalised_weights[i]
-            new_particlecloud.poses.append(self.add_noise(self.particlecloud.poses[i]))
+        new_particlecloud.poses = self.sample_with_replacement(self.particlecloud.poses, normalised_weights, self.UPDATE_PARTICLE_COUNT)
 
         self.particlecloud = new_particlecloud
 
+    def systematic_sampling(self, original_poses, weights, sample_count):
+        sampled_poses = []
+        random_range = random.uniform(0, 1.0 / sample_count)
+        cumulative_weight = weights[0]
+        weight_index = 0
+
+        for sample_index in range(sample_count):
+            sample_value = random_range + sample_index / sample_count
+
+            while sample_value > cumulative_weight:
+                weight_index += 1
+                cumulative_weight += weights[weight_index]
+
+            sampled_poses.append(self.add_noise(original_poses[weight_index]))
+
+        return sampled_poses
 
 
+    def sample_with_replacement(self, original_poses, weights, sample_count):
+        sampled_poses = []
 
-
-
-    def sample_with_replacement(self, original_poses, weights):
-        for i in range(self.UPDATE_PARTICLE_COUNT):
+        for i in range(sample_count):
             # ----- Choose a random particle
-            random_particle = np.random.choice(self.particlecloud.poses, p=normalised_weights)
+            random_particle = np.random.choice(original_poses, p=weights)
 
             # ----- Add a copy of the random particle to the new particle cloud
-            new_particlecloud.poses.append(self.add_noise(random_particle))
+            sampled_poses.append(self.add_noise(random_particle))
+
+        return sampled_poses
 
 
 
-    def add_noise(self, pose, coord_sd=self.SCAN_SAMPLE_NOISE, orient_sd=self.SCAN_ORIENTATION_NOISE):
+    def add_noise(self, pose):
         """
         Add noise to a pose
 
         :Args:
             | pose (geometry_msgs.msg.Pose): pose to add noise to
-            | coord_sd (double): standard deviation of noise to add to position
-            | orient_sd (double): standard deviation of noise to add to orientation
         :Return:
             | (geometry_msgs.msg.Pose) new pose
         """
         new_pose = Pose()
-        new_pose.position.x = pose.position.x + random.gauss(0, coord_sd)
-        new_pose.position.y = pose.position.y + random.gauss(0, coord_sd)
-        new_pose.orientation = rotateQuaternion(pose.orientation, random.gauss(0, orient_sd))
+        new_pose.position.x = pose.position.x + random.gauss(0, self.UPDATE_COORD_SD)
+        new_pose.position.y = pose.position.y + random.gauss(0, self.UPDATE_COORD_SD)
+        new_pose.orientation = rotateQuaternion(pose.orientation, random.gauss(0, self.UPDATE_ORIENT_SD))
         return new_pose
 
 
