@@ -204,6 +204,57 @@ class PFLocaliser(PFLocaliserBase):
 
         return estimated_pose
 
+        def estimate_pose(self):
+
+        """
+        Abbas
+        """
+        num_particles = len(self.particlecloud.poses)
+
+        if num_particles == 0:
+            # No particles available, return an invalid pose
+            estimated_pose = Pose()
+            estimated_pose.position.x = float('nan')
+            estimated_pose.position.y = float('nan')
+            estimated_pose.orientation = Quaternion()
+            estimated_pose.orientation.w = float('nan')
+            return estimated_pose
+
+        # Initialize variables to accumulate the sum of positions and orientations
+        sum_x, sum_y, sum_quaternion = 0.0, 0.0, (0.0, 0.0, 0.0, 0.0)
+
+        # Sum the positions and orientations of all particles
+        for pose in self.particlecloud.poses:
+            sum_x += pose.position.x
+            sum_y += pose.position.y
+            sum_quaternion = (
+                sum_quaternion[0] + pose.orientation.x,
+                sum_quaternion[1] + pose.orientation.y,
+                sum_quaternion[2] + pose.orientation.z,
+                sum_quaternion[3] + pose.orientation.w
+            )
+
+        # Calculate the average position and orientation
+        average_x = sum_x / num_particles
+        average_y = sum_y / num_particles
+        average_quaternion = (
+            sum_quaternion[0] / num_particles,
+            sum_quaternion[1] / num_particles,
+            sum_quaternion[2] / num_particles,
+            sum_quaternion[3] / num_particles
+        )
+
+        # Create the estimated pose with the average values
+        estimated_pose = Pose()
+        estimated_pose.position.x = average_x
+        estimated_pose.position.y = average_y
+        estimated_pose.orientation = Quaternion(*average_quaternion)
+
+        return estimated_pose
+
+
+
+
         # for pose in self.particlecloud.poses:
         #     average_x = sum(pose.position.x) / len(self.particlecloud.poses)
         #     average_y = sum(pose.position.y) / len(self.particlecloud.poses)
