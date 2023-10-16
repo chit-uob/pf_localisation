@@ -19,9 +19,9 @@ class PFLocaliser(PFLocaliserBase):
         # ----- Set motion model parameters
         self.POSITION_STD_DEV = 8
         self.ORIENTATION_STD_DEV = 8
-        self.ODOM_ROTATION_NOISE = 0.01 		# Odometry model rotation noise
-        self.ODOM_TRANSLATION_NOISE = 0.01 	# Odometry x axis (forward) noise
-        self.ODOM_DRIFT_NOISE = 0.01 			# Odometry y axis (side-side) noise
+        # self.ODOM_ROTATION_NOISE = 0.01 		# Odometry model rotation noise
+        # self.ODOM_TRANSLATION_NOISE = 0.01 	# Odometry x axis (forward) noise
+        # self.ODOM_DRIFT_NOISE = 0.01 			# Odometry y axis (side-side) noise
  
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
@@ -57,7 +57,7 @@ class PFLocaliser(PFLocaliserBase):
         initial_position = initialpose.pose.pose.position
 
         # ----- For each particle
-        for i in range(2000):
+        for i in range(1000):
             # ----- Create a new pose
             new_pose = Pose()
             new_pose.position.x = initial_position.x + random.gauss(0, self.POSITION_STD_DEV)
