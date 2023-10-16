@@ -131,10 +131,18 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) new pose
         """
+        coord_sd = self.UPDATE_COORD_SD
+        orient_sd = self.UPDATE_ORIENT_SD
+
+        # a 1 in 100 chance of having a big jump
+        if random.randint(0, 100) == 0:
+            coord_sd = 3
+            orient_sd = 1
+
         new_pose = Pose()
-        new_pose.position.x = pose.position.x + random.gauss(0, self.UPDATE_COORD_SD)
-        new_pose.position.y = pose.position.y + random.gauss(0, self.UPDATE_COORD_SD)
-        new_pose.orientation = rotateQuaternion(pose.orientation, random.gauss(0, self.UPDATE_ORIENT_SD))
+        new_pose.position.x = pose.position.x + random.gauss(0, coord_sd)
+        new_pose.position.y = pose.position.y + random.gauss(0, coord_sd)
+        new_pose.orientation = rotateQuaternion(pose.orientation, random.gauss(0, orient_sd))
         return new_pose
 
 
