@@ -17,7 +17,7 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
-        self.INITIAL_PARTICLE_COUNT = 2000		# Number of particles to use
+        self.INITIAL_PARTICLE_COUNT = 200		# Number of particles to use
         self.POSITION_STD_DEV = 8
         self.ORIENTATION_STD_DEV = 8
         self.ODOM_ROTATION_NOISE = 0.01 		# Odometry model rotation noise
@@ -27,9 +27,11 @@ class PFLocaliser(PFLocaliserBase):
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
 
-        self.UPDATE_COORD_SD = 0.05           # Laser scan sampling noise
-        self.UPDATE_ORIENT_SD = 0.2      # Laser scan orientation noise
-        self.UPDATE_PARTICLE_COUNT = 1000    # Number of particles to update
+        self.UPDATE_COORD_SD = 0.1           # Laser scan sampling noise
+        self.UPDATE_ORIENT_SD = 0.1      # Laser scan orientation noise
+        self.UPDATE_PARTICLE_COUNT = 100    # Number of particles to update
+
+        self.weights = []
 
 
     def initialise_particle_cloud(self, initialpose):
@@ -75,6 +77,8 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
+        
+        print('in update')
         weights = []
         # ----- For each particle
         for pose in self.particlecloud.poses:
@@ -88,6 +92,7 @@ class PFLocaliser(PFLocaliserBase):
         new_particlecloud = PoseArray()
         new_particlecloud.poses = self.systematic_sampling(self.particlecloud.poses, normalised_weights, self.UPDATE_PARTICLE_COUNT)
 
+        self.weights = weights
         self.particlecloud = new_particlecloud
 
     def systematic_sampling(self, original_poses, weights, sample_count):
@@ -97,6 +102,7 @@ class PFLocaliser(PFLocaliserBase):
         weight_index = 0
 
         for sample_index in range(sample_count):
+            print('resampling')
             sample_value = random_range + sample_index / sample_count
 
             while sample_value > cumulative_weight:
@@ -135,7 +141,7 @@ class PFLocaliser(PFLocaliserBase):
         orient_sd = self.UPDATE_ORIENT_SD
 
         # a 1 in 100 chance of having a big jump
-        if random.randint(0, 100) == 0:
+        if random.randint(0, 500) == 0:
             coord_sd = 3
             orient_sd = 1
 
@@ -162,4 +168,47 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) robot's estimated pose.
          """
-        return self.particlecloud.poses[0]
+        # Assume that self.particlecloud.poses is a list of Pose objects
+        # and that self.weights is a list of corresponding weights
+
+        # Select the top N% of particles based on weight
+        N = 5  # for example, use the top 10% of particles
+        num_particles = len(self.particlecloud.poses)
+        num_top_particles = num_particles * N // 100
+        print('estimating')
+        # weights = []
+        # # ----- For each particle
+        # for pose in self.particlecloud.poses:
+        #     weights.append(self.sensor_model.get_weight(scan, pose))
+        
+        # Get the indices of the top N% of particles based on weight
+        top_particle_indices = sorted(range(num_particles), key=lambda i: self.weights[i], reverse=True)[:num_top_particles]
+        
+        # Compute the average position and orientation of the top particles
+        avg_x = avg_y = avg_z = avg_w = 0.0
+        for i in top_particle_indices:
+            print('updating')
+            avg_x += self.particlecloud.poses[i].position.x
+            avg_y += self.particlecloud.poses[i].position.y
+            q = self.particlecloud.poses[i].orientation
+            avg_z += q.z
+            avg_w += q.w
+        
+        avg_x /= num_top_particles
+        avg_y /= num_top_particles
+        avg_z /= num_top_particles
+        avg_w /= num_top_particles
+        
+        # Normalize the average quaternion to ensure it's a unit quaternion
+        norm = math.sqrt(avg_z**2 + avg_w**2)
+        avg_z /= norm
+        avg_w /= norm
+        
+        # Create a Pose object for the estimated pose
+        estimated_pose = Pose()
+        estimated_pose.position.x = avg_x
+        estimated_pose.position.y = avg_y
+        estimated_pose.orientation.z = avg_z
+        estimated_pose.orientation.w = avg_w
+        
+        return estimated_pose
