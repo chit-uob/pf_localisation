@@ -139,7 +139,7 @@ class PFLocaliser(PFLocaliserBase):
         orient_sd = self.UPDATE_ORIENT_SD
 
         # a 1 in 100 chance of having a big jump
-        if random.randint(0, UPDATE_BIG_JUMP_IN_EVERY) == 0:
+        if random.randint(0, self.UPDATE_BIG_JUMP_IN_EVERY) == 0:
             coord_sd = 3
             orient_sd = 1
 
