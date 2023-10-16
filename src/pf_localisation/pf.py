@@ -26,8 +26,9 @@ class PFLocaliser(PFLocaliserBase):
  
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
-        self.UPDATE_COORD_SD = 0.1           # Laser scan sampling noise
-        self.UPDATE_ORIENT_SD = 0.1      # Laser scan orientation noise
+
+        self.UPDATE_COORD_SD = 0.05           # Laser scan sampling noise
+        self.UPDATE_ORIENT_SD = 0.2      # Laser scan orientation noise
         self.UPDATE_PARTICLE_COUNT = 1000    # Number of particles to update
 
 
@@ -85,7 +86,7 @@ class PFLocaliser(PFLocaliserBase):
 
         # ----- Do resampling
         new_particlecloud = PoseArray()
-        new_particlecloud.poses = self.sample_with_replacement(self.particlecloud.poses, normalised_weights, self.UPDATE_PARTICLE_COUNT)
+        new_particlecloud.poses = self.systematic_sampling(self.particlecloud.poses, normalised_weights, self.UPDATE_PARTICLE_COUNT)
 
         self.particlecloud = new_particlecloud
 
