@@ -26,7 +26,8 @@ class PFLocaliser(PFLocaliserBase):
         # # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         # self.INITIAL_NOISE = 5                # Noise in initial particle cloud
-        self.SCAN_SAMPLE_NOISE = 1           # Laser scan sampling noise
+        self.SCAN_SAMPLE_NOISE = 1   
+        self.RESAMPLING_NOISE_STD_DEV = 0.1        # Laser scan sampling noise
 
         
        
@@ -82,35 +83,38 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
-        weights = []
-        # ----- For each particle
-        for pose in self.particlecloud.poses:
-            weights.append(self.sensor_model.get_weight(scan, pose))
+         
+        weights = [self.sensor_model.get_weight(scan, pose) for pose in self.particlecloud.poses]
+        # Normalize the weights
+        sum_weights = sum(weights)
+        normalized_weights = [w / sum_weights for w in weights]
 
-        # ----- Normalise weights
-        weight_sum = sum(weights)
-        weights = [w / weight_sum for w in weights]
-
-        # ----- Resample
-        new_particles = []
-
-        # ----- Pick 100 particles from the old ones, with replacement
-        for i in range(1000):
-            # ----- Pick a random particle, weighted by the weights
+        # Resample the particle cloud based on the weights
+        new_particlecloud_poses = []
+        for _ in self.particlecloud.poses:
+            # Roulette-wheel selection
             r = random.random()
-            total = 0.0
-            for j in range(len(weights)):
-                total += weights[j]
-                if total > r:
-                    # ----- add noise to the particle
-                    new_pose = Pose()
-                    new_pose.position.x = self.particlecloud.poses[j].position.x + (random.random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE
-                    new_pose.position.y = self.particlecloud.poses[j].position.y + (random.random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE
-                    new_pose.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, (random.random() * 0.1 - 0.05) * self.SCAN_SAMPLE_NOISE)
-                    new_particles.append(new_pose)
-                    break
+            index = 0
+            c = normalized_weights[0]
+            while r > c:
+                index += 1
+                c += normalized_weights[index]
+                # Selected particle
+                selected_particle = self.particlecloud.poses[index]
+            
 
-        self.particlecloud.poses = new_particles
+                noisy_particle = Pose()
+                noisy_particle.position.x = selected_particle.position.x + random.uniform(-self.RESAMPLING_NOISE_STD_DEV, self.RESAMPLING_NOISE_STD_DEV)
+                noisy_particle.position.y = selected_particle.position.y + random.uniform(-self.RESAMPLING_NOISE_STD_DEV, self.RESAMPLING_NOISE_STD_DEV)
+                # noisy_particle.position.z = selected_particle.position.z  # Assuming 2D environment, z remains constant
+            
+                initial_yaw = getHeading(selected_particle.orientation)
+                noisy_yaw = initial_yaw + random.uniform(-self.RESAMPLING_NOISE_STD_DEV, self.RESAMPLING_NOISE_STD_DEV)
+                noisy_particle.orientation = rotateQuaternion(selected_particle.orientation, noisy_yaw)
+            
+                new_particlecloud_poses.append(noisy_particle)
+        
+        self.particlecloud.poses = new_particlecloud_poses
 
     def estimate_pose(self):
         """
