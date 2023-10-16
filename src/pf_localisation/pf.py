@@ -173,7 +173,6 @@ class PFLocaliser(PFLocaliserBase):
         N = 5  # for example, use the top 10% of particles
         num_particles = len(self.particlecloud.poses)
         num_top_particles = num_particles * N // 100
-        print('IN ESTIMATE')
         # weights = []
         # # ----- For each particle
         # for pose in self.particlecloud.poses:
@@ -185,7 +184,6 @@ class PFLocaliser(PFLocaliserBase):
         # Compute the average position and orientation of the top particles
         avg_x = avg_y = avg_z = avg_w = 0.0
         for i in top_particle_indices:
-            print('estimating....')
             avg_x += self.particlecloud.poses[i].position.x
             avg_y += self.particlecloud.poses[i].position.y
             q = self.particlecloud.poses[i].orientation
