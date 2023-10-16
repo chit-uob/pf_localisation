@@ -128,4 +128,97 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) robot's estimated pose.
          """
-        return self.particlecloud.poses[0]
+
+        # Assume that self.particlecloud.poses is a list of Pose objects
+        # and that self.weights is a list of corresponding weights
+
+        # weights = []
+        # for pose in self.particlecloud.poses:
+        #     weights.append(self.sensor_model.get_weight(scan, pose))
+
+        # Select the top N% of particles based on weight
+        # N = 10  # for example, use the top 10% of particles
+        # num_particles = len(self.particlecloud.poses)
+        # num_top_particles = num_particles * N // 100
+        #
+        # # Get the indices of the top N% of particles based on weight
+        # top_particle_indices = sorted(range(num_particles), key=lambda i: weights[i], reverse=True)[
+        #                        :num_top_particles]
+        #
+        # # Compute the average position and orientation of the top particles
+        # avg_x = avg_y = avg_z = avg_w = 0.0
+        # for i in top_particle_indices:
+        #     avg_x += self.particlecloud.poses[i].position.x
+        #     avg_y += self.particlecloud.poses[i].position.y
+        #     q = self.particlecloud.poses[i].orientation
+        #     avg_z += q.z
+        #     avg_w += q.w
+        #
+        # avg_x /= num_top_particles
+        # avg_y /= num_top_particles
+        # avg_z /= num_top_particles
+        # avg_w /= num_top_particles
+        #
+        # # Normalize the average quaternion to ensure it's a unit quaternion
+        # norm = math.sqrt(avg_z ** 2 + avg_w ** 2)
+        # avg_z /= norm
+        # avg_w /= norm
+        #
+        # # Create a Pose object for the estimated pose
+        # estimated_pose = Pose()
+        # estimated_pose.position.x = avg_x
+        # estimated_pose.position.y = avg_y
+        # estimated_pose.orientation.z = avg_z
+        # estimated_pose.orientation.w = avg_w
+        #
+        # return estimated_pose
+
+        #Select the top N% of particles based on weight
+        # N = 10  # for example, use the top 10% of particles
+        # num_particles = len(self.particlecloud.poses)
+        # num_top_particles = num_particles * N // 100
+
+        for i in self.particlecloud.poses:
+            average_x += self.particlecloud.poses[i].position.x
+            average_y += self.particlecloud.poses[i].position.y
+            q = self.particlecloud.poses[i].orientation
+            average_z += q.z
+            average_w += q.w
+
+        average_x /= len(self.particlecloud.poses)
+        average_y /= len(self.particlecloud.poses)
+        average_z /= len(self.particlecloud.poses)
+        average_w /= len(self.particlecloud.poses)
+
+        # Normalize the average quaternion to ensure it's a unit quaternion
+        norm = math.sqrt(avg_z ** 2 + avg_w ** 2)
+        avg_z /= norm
+        avg_w /= norm
+
+        # Create a Pose object for the estimated pose
+        estimated_pose = Pose()
+        estimated_pose.position.x = avg_x
+        estimated_pose.position.y = avg_y
+        estimated_pose.orientation.z = avg_z
+        estimated_pose.orientation.w = avg_w
+
+        return estimated_pose
+
+        # for pose in self.particlecloud.poses:
+        #     average_x = sum(pose.position.x) / len(self.particlecloud.poses)
+        #     average_y = sum(pose.position.y) / len(self.particlecloud.poses)
+        #     q = self.particlecloud.poses[].orientation
+
+        #     average_heading_x = sum(math.cos(getHeading(pose.position.x))) / len(self.particlecloud.poses)
+        #     average_heading_y = sum(math.sin(getHeading(pose.position.x))) / len(self.particlecloud.poses)
+        #     average_heading = math.atan2(average_heading_y, average_heading_x)
+
+        # # Create a new Pose message for the estimated pose
+        # estimated_pose = Pose()
+        # estimated_pose.position.x = average_x
+        # estimated_pose.position.y = average_y
+        # estimated_pose.orientation = rotateQuaternion(Quaternion(), average_heading)
+
+        # return estimated_pose
+
+        #return self.particlecloud.poses[0]
