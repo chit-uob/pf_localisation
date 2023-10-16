@@ -49,6 +49,7 @@ class PFLocaliser(PFLocaliserBase):
             | (geometry_msgs.msg.PoseArray) poses of the particles
         """
         #initialising array
+        print('IN INITIALISE')
         particlecloud = PoseArray()
 
         #initialising pose
@@ -58,6 +59,7 @@ class PFLocaliser(PFLocaliserBase):
         # ----- For each particle
         for i in range(self.INITIAL_PARTICLE_COUNT):
             # ----- Create a new pose
+            print('initialising....')
             new_pose = Pose()
             new_pose.position.x = initial_position.x + random.gauss(0, self.POSITION_STD_DEV)
             new_pose.position.y = initial_position.y + random.gauss(0, self.POSITION_STD_DEV)
@@ -78,7 +80,7 @@ class PFLocaliser(PFLocaliserBase):
 
          """
         
-        print('in update')
+        print('IN UPDATE')
         weights = []
         # ----- For each particle
         for pose in self.particlecloud.poses:
@@ -102,7 +104,7 @@ class PFLocaliser(PFLocaliserBase):
         weight_index = 0
 
         for sample_index in range(sample_count):
-            print('resampling')
+            print('resampling...')
             sample_value = random_range + sample_index / sample_count
 
             while sample_value > cumulative_weight:
@@ -175,7 +177,7 @@ class PFLocaliser(PFLocaliserBase):
         N = 5  # for example, use the top 10% of particles
         num_particles = len(self.particlecloud.poses)
         num_top_particles = num_particles * N // 100
-        print('estimating')
+        print('IN ESTIMATE')
         # weights = []
         # # ----- For each particle
         # for pose in self.particlecloud.poses:
@@ -187,7 +189,7 @@ class PFLocaliser(PFLocaliserBase):
         # Compute the average position and orientation of the top particles
         avg_x = avg_y = avg_z = avg_w = 0.0
         for i in top_particle_indices:
-            print('updating')
+            print('estimating....')
             avg_x += self.particlecloud.poses[i].position.x
             avg_y += self.particlecloud.poses[i].position.y
             q = self.particlecloud.poses[i].orientation
