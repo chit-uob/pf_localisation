@@ -29,7 +29,7 @@ class PFLocaliser(PFLocaliserBase):
         self.SCAN_SAMPLE_NOISE = 1           # Laser scan sampling noise
         self.INITIAL_NOISE = 5                # Noise in initial particle cloud
         self.SCAN_SAMPLE_NOISE = 0.1           # Laser scan sampling noise
-        self.UPDATE_PARTICLE_COUNT = 100    # Number of particles to update
+        self.UPDATE_PARTICLE_COUNT = 1000    # Number of particles to update
 
 
     def initialise_particle_cloud(self, initialpose):
@@ -93,23 +93,17 @@ class PFLocaliser(PFLocaliserBase):
         weight_sum = sum(weights)
         normalised_weights = [weight / weight_sum for weight in weights]
 
-        # ----- Do systematic resampling
+        # ----- Randomly sample particles from the particle cloud with replacement
         new_particlecloud = PoseArray()
-        new_particlecloud.header.frame_id = 'map'
-        new_particlecloud.header.stamp = rospy.Time.now()
-        new_particlecloud.poses = []
-        r = uniform(0, 1.0 / self.UPDATE_PARTICLE_COUNT)
-        c = normalised_weights[0]
-        i = 0
-        for m in range(self.UPDATE_PARTICLE_COUNT):
-            u = r + m / self.UPDATE_PARTICLE_COUNT
-            while u > c:
-                i += 1
-                c += normalised_weights[i]
-            new_particlecloud.poses.append(self.add_noise(self.particlecloud.poses[i]))
 
-        # print(len(new_particlecloud.poses))
-        # print([pose.position.x for pose in new_particlecloud.poses])
+        for i in range(self.UPDATE_PARTICLE_COUNT):
+            # ----- Choose a random particle
+            random_index = np.random.choice(len(self.particlecloud.poses), p=normalised_weights)
+            random_particle = self.particlecloud.poses[random_index]
+
+            # ----- Add a copy of the random particle to the new particle cloud
+            new_particlecloud.poses.append(self.add_noise(random_particle))
+
         self.particlecloud = new_particlecloud
 
 
@@ -125,9 +119,9 @@ class PFLocaliser(PFLocaliserBase):
             | (geometry_msgs.msg.Pose) pose with noise added
         """
         new_pose = Pose()
-        new_pose.position.x = pose.position.x + (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE
-        new_pose.position.y = pose.position.y + (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE
-        new_pose.orientation = rotateQuaternion(pose.orientation, (random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE)
+        new_pose.position.x = pose.position.x + (random.random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE
+        new_pose.position.y = pose.position.y + (random.random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE
+        new_pose.orientation = rotateQuaternion(pose.orientation, (random.random() * 1 - 0.5) * self.SCAN_SAMPLE_NOISE)
         return new_pose
 
 
