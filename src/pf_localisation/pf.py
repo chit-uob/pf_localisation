@@ -17,19 +17,20 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
-        self.INITIAL_PARTICLE_COUNT = 200		# Number of particles to use
+        self.INITIAL_PARTICLE_COUNT = 2000		# Number of particles to use
         self.POSITION_STD_DEV = 8
         self.ORIENTATION_STD_DEV = 8
         self.ODOM_ROTATION_NOISE = 0.01 		# Odometry model rotation noise
         self.ODOM_TRANSLATION_NOISE = 0.01 	# Odometry x axis (forward) noise
         self.ODOM_DRIFT_NOISE = 0.01 			# Odometry y axis (side-side) noise
+        self.KIDNAPPING_PROBABILITY = 0.005
  
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
 
         self.UPDATE_COORD_SD = 0.1           # Laser scan sampling noise
         self.UPDATE_ORIENT_SD = 0.1      # Laser scan orientation noise
-        self.UPDATE_PARTICLE_COUNT = 100    # Number of particles to update
+        self.UPDATE_PARTICLE_COUNT = 1000    # Number of particles to update
 
         self.weights = []
 
@@ -79,7 +80,6 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
-        
         print('IN UPDATE')
         weights = []
         # ----- For each particle
@@ -93,6 +93,22 @@ class PFLocaliser(PFLocaliserBase):
         # ----- Do resampling
         new_particlecloud = PoseArray()
         new_particlecloud.poses = self.systematic_sampling(self.particlecloud.poses, normalised_weights, self.UPDATE_PARTICLE_COUNT)
+
+        # Kidnapping: Introduce random particles
+        num_kidnapped_particles = int(self.KIDNAPPING_PROBABILITY * len(self.particlecloud.poses))
+        
+        for _ in range(num_kidnapped_particles):
+            kidnapped_pose = Pose()
+
+            print('kidnappeddddddd')
+            # Assuming some boundaries for the environment, set them accordingly
+            kidnapped_pose.position.x = random.uniform(0, 10)
+            kidnapped_pose.position.y = random.uniform(0, 10)
+            random_yaw = random.uniform(-math.pi, math.pi)
+            kidnapped_orientation = rotateQuaternion(Quaternion(), random_yaw)
+            kidnapped_pose.orientation = kidnapped_orientation
+            self.particlecloud.poses.append(kidnapped_pose)
+        
 
         self.weights = weights
         self.particlecloud = new_particlecloud
