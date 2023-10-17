@@ -18,8 +18,8 @@ class PFLocaliser(PFLocaliserBase):
         
         # ----- Set motion model parameters
         self.INITIAL_PARTICLE_COUNT = 2000		# Number of particles to use
-        self.POSITION_STD_DEV = 8
-        self.ORIENTATION_STD_DEV = 8
+        self.POSITION_STD_DEV = 5
+        self.ORIENTATION_STD_DEV = 5
         self.ODOM_ROTATION_NOISE = 0.005 		# Odometry model rotation noise
         self.ODOM_TRANSLATION_NOISE = 0.01 	# Odometry x axis (forward) noise
         self.ODOM_DRIFT_NOISE = 0.005 			# Odometry y axis (side-side) noise
@@ -136,6 +136,7 @@ class PFLocaliser(PFLocaliserBase):
         return sampled_poses
 
 
+    # We are not using this function anymore because we are using systematic sampling
     def sample_with_replacement(self, original_poses, weights, sample_count):
         sampled_poses = []
 
@@ -195,30 +196,18 @@ class PFLocaliser(PFLocaliserBase):
         # and that self.weights is a list of corresponding weights
 
         # Select the top N% of particles based on weight
-        N = 5  # for example, use the top 10% of particles
+        top_n_precent_of_particles = 5
         num_particles = len(self.particlecloud.poses)
-        num_top_particles = num_particles * N // 100
-        # weights = []
-        # # ----- For each particle
-        # for pose in self.particlecloud.poses:
-        #     weights.append(self.sensor_model.get_weight(scan, pose))
+        num_top_particles = num_particles * top_n_precent_of_particles // 100
 
         # Get the indices of the top N% of particles based on weight
         top_particle_indices = sorted(range(num_particles), key=lambda i: self.weights[i], reverse=True)[:num_top_particles]
 
-        # Compute the average position and orientation of the top particles
-        avg_x = avg_y = avg_z = avg_w = 0.0
-        for i in top_particle_indices:
-            avg_x += self.particlecloud.poses[i].position.x
-            avg_y += self.particlecloud.poses[i].position.y
-            q = self.particlecloud.poses[i].orientation
-            avg_z += q.z
-            avg_w += q.w
-
-        avg_x /= num_top_particles
-        avg_y /= num_top_particles
-        avg_z /= num_top_particles
-        avg_w /= num_top_particles
+        # Get the average position and orientation of the top particles
+        avg_x = math.fsum([self.particlecloud.poses[i].position.x for i in top_particle_indices]) / num_top_particles
+        avg_y = math.fsum([self.particlecloud.poses[i].position.y for i in top_particle_indices]) / num_top_particles
+        avg_z = math.fsum([self.particlecloud.poses[i].orientation.z for i in top_particle_indices]) / num_top_particles
+        avg_w = math.fsum([self.particlecloud.poses[i].orientation.w for i in top_particle_indices]) / num_top_particles
 
         # Normalize the average quaternion to ensure it's a unit quaternion
         norm = math.sqrt(avg_z**2 + avg_w**2)
