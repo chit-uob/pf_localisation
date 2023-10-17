@@ -178,80 +178,100 @@ class PFLocaliser(PFLocaliserBase):
         # num_particles = len(self.particlecloud.poses)
         # num_top_particles = num_particles * N // 100
 
-        for i in self.particlecloud.poses:
-            average_x += self.particlecloud.poses[i].position.x
-            average_y += self.particlecloud.poses[i].position.y
-            q = self.particlecloud.poses[i].orientation
-            average_z += q.z
-            average_w += q.w
+        # for i in self.particlecloud.poses:
+        #     average_x += self.particlecloud.poses[i].position.x
+        #     average_y += self.particlecloud.poses[i].position.y
+        #     q = self.particlecloud.poses[i].orientation
+        #     average_z += q.z
+        #     average_w += q.w
+        #
+        # average_x /= len(self.particlecloud.poses)
+        # average_y /= len(self.particlecloud.poses)
+        # average_z /= len(self.particlecloud.poses)
+        # average_w /= len(self.particlecloud.poses)
+        #
+        # # Normalize the average quaternion to ensure it's a unit quaternion
+        # norm = math.sqrt(avg_z ** 2 + avg_w ** 2)
+        # avg_z /= norm
+        # avg_w /= norm
+        #
+        # # Create a Pose object for the estimated pose
+        # estimated_pose = Pose()
+        # estimated_pose.position.x = avg_x
+        # estimated_pose.position.y = avg_y
+        # estimated_pose.orientation.z = avg_z
+        # estimated_pose.orientation.w = avg_w
+        #
+        # return estimated_pose
 
-        average_x /= len(self.particlecloud.poses)
-        average_y /= len(self.particlecloud.poses)
-        average_z /= len(self.particlecloud.poses)
-        average_w /= len(self.particlecloud.poses)
+        # def estimate_pose(self):
 
-        # Normalize the average quaternion to ensure it's a unit quaternion
-        norm = math.sqrt(avg_z ** 2 + avg_w ** 2)
-        avg_z /= norm
-        avg_w /= norm
-
-        # Create a Pose object for the estimated pose
-        estimated_pose = Pose()
-        estimated_pose.position.x = avg_x
-        estimated_pose.position.y = avg_y
-        estimated_pose.orientation.z = avg_z
-        estimated_pose.orientation.w = avg_w
-
-        return estimated_pose
-
-        def estimate_pose(self):
-
-            """
+        """
             Abbas
             """
 
+        # num_particles = len(self.particlecloud.poses)
+        #
+        # if num_particles == 0:
+        #     # No particles available, return an invalid pose
+        #     estimated_pose = Pose()
+        #     estimated_pose.position.x = float('nan')
+        #     estimated_pose.position.y = float('nan')
+        #     estimated_pose.orientation = Quaternion()
+        #     estimated_pose.orientation.w = float('nan')
+        #     return estimated_pose
+        #
+        # # Initialize variables to accumulate the sum of positions and orientations
+        # sum_x, sum_y, sum_quaternion = 0.0, 0.0, (0.0, 0.0, 0.0, 0.0)
+        #
+        # # Sum the positions and orientations of all particles
+        # for pose in self.particlecloud.poses:
+        #     sum_x += pose.position.x
+        #     sum_y += pose.position.y
+        #     sum_quaternion = (
+        #         sum_quaternion[0] + pose.orientation.x,
+        #         sum_quaternion[1] + pose.orientation.y,
+        #         sum_quaternion[2] + pose.orientation.z,
+        #         sum_quaternion[3] + pose.orientation.w
+        #     )
+        #
+        # # Calculate the average position and orientation
+        # average_x = sum_x / num_particles
+        # average_y = sum_y / num_particles
+        # average_quaternion = (
+        #     sum_quaternion[0] / num_particles,
+        #     sum_quaternion[1] / num_particles,
+        #     sum_quaternion[2] / num_particles,
+        #     sum_quaternion[3] / num_particles
+        # )
+        #
+        # # Create the estimated pose with the average values
+        # estimated_pose = Pose()
+        # estimated_pose.position.x = average_x
+        # estimated_pose.position.y = average_y
+        # estimated_pose.orientation = Quaternion(*average_quaternion)
+        #
+        # return estimated_pose
+
+
         num_particles = len(self.particlecloud.poses)
 
-        if num_particles == 0:
-            # No particles available, return an invalid pose
-            estimated_pose = Pose()
-            estimated_pose.position.x = float('nan')
-            estimated_pose.position.y = float('nan')
-            estimated_pose.orientation = Quaternion()
-            estimated_pose.orientation.w = float('nan')
-            return estimated_pose
+        # Create an array to store the weights
+        weights = np.zeros(num_particles)
 
-        # Initialize variables to accumulate the sum of positions and orientations
-        sum_x, sum_y, sum_quaternion = 0.0, 0.0, (0.0, 0.0, 0.0, 0.0)
+        # Calculate the weight for each particle based on the sensor model
+        for i in range(num_particles):
+            weights[i] = self.sensor_model.get_weight(scan, self.particlecloud.poses[i])
 
-        # Sum the positions and orientations of all particles
-        for pose in self.particlecloud.poses:
-            sum_x += pose.position.x
-            sum_y += pose.position.y
-            sum_quaternion = (
-                sum_quaternion[0] + pose.orientation.x,
-                sum_quaternion[1] + pose.orientation.y,
-                sum_quaternion[2] + pose.orientation.z,
-                sum_quaternion[3] + pose.orientation.w
-            )
+        # Find the index of the particle with the highest weight (MLE)
+        max_weight_index = np.argmax(weights)
 
-        # Calculate the average position and orientation
-        average_x = sum_x / num_particles
-        average_y = sum_y / num_particles
-        average_quaternion = (
-            sum_quaternion[0] / num_particles,
-            sum_quaternion[1] / num_particles,
-            sum_quaternion[2] / num_particles,
-            sum_quaternion[3] / num_particles
-        )
-
-        # Create the estimated pose with the average values
-        estimated_pose = Pose()
-        estimated_pose.position.x = average_x
-        estimated_pose.position.y = average_y
-        estimated_pose.orientation = Quaternion(*average_quaternion)
+        # Return the pose of the particle with the highest weight
+        estimated_pose = self.particlecloud.poses[max_weight_index]
 
         return estimated_pose
+
+    # You may need to implement other methods and helper functions as needed
 
 
 
