@@ -29,9 +29,8 @@ class PFLocaliser(PFLocaliserBase):
 
         self.UPDATE_COORD_SD = 0.1           # Laser scan sampling noise
         self.UPDATE_ORIENT_SD = 0.1      # Laser scan orientation noise
-        self.UPDATE_PARTICLE_COUNT = 900    # Number of particles to update
-        self.UPDATE_BIG_JUMP_IN_EVERY = 100
-        self.UPDATE_RANDOM_PARTICLE_COUNT = 100 # Number of random particles to add
+        self.UPDATE_PARTICLE_COUNT = 800    # Number of particles to update
+        self.UPDATE_RANDOM_PARTICLE_COUNT = 25 # Number of random particles to add
 
         self.weights = []
 
@@ -163,10 +162,11 @@ class PFLocaliser(PFLocaliserBase):
         coord_sd = self.UPDATE_COORD_SD
         orient_sd = self.UPDATE_ORIENT_SD
 
-        # a 1 in 100 chance of having a big jump
-        if random.randint(0, self.UPDATE_BIG_JUMP_IN_EVERY) == 0:
-            coord_sd = 3
-            orient_sd = 1
+        # we now have random noise added, so no longer need this
+        # # a 1 in 100 chance of having a big jump
+        # if random.randint(0, self.UPDATE_BIG_JUMP_IN_EVERY) == 0:
+        #     coord_sd = 3
+        #     orient_sd = 1
 
         new_pose = Pose()
         new_pose.position.x = pose.position.x + random.gauss(0, coord_sd)
@@ -231,9 +231,5 @@ class PFLocaliser(PFLocaliserBase):
         estimated_pose.position.y = avg_y
         estimated_pose.orientation.z = avg_z
         estimated_pose.orientation.w = avg_w
-
-        self.UPDATE_RANDOM_PARTICLE_COUNT = 0
-
-        # print("Estimated pose: ", estimated_pose.position.x, estimated_pose.position.y, getHeading(estimated_pose.orientation))
 
         return estimated_pose
