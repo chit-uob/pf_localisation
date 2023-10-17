@@ -29,8 +29,9 @@ class PFLocaliser(PFLocaliserBase):
 
         self.UPDATE_COORD_SD = 0.1           # Laser scan sampling noise
         self.UPDATE_ORIENT_SD = 0.1      # Laser scan orientation noise
-        self.UPDATE_PARTICLE_COUNT = 1000    # Number of particles to update
+        self.UPDATE_PARTICLE_COUNT = 900    # Number of particles to update
         self.UPDATE_BIG_JUMP_IN_EVERY = 100
+        self.UPDATE_RANDOM_PARTICLE_COUNT = 100 # Number of random particles to add
 
         self.weights = []
 
@@ -90,9 +91,33 @@ class PFLocaliser(PFLocaliserBase):
         # ----- Do resampling
         new_particlecloud = PoseArray()
         new_particlecloud.poses = self.systematic_sampling(self.particlecloud.poses, normalised_weights, self.UPDATE_PARTICLE_COUNT)
+        new_particlecloud.poses += self.get_random_particles(self.UPDATE_RANDOM_PARTICLE_COUNT, -13, 13, -13, 13)
 
         self.weights = weights
         self.particlecloud = new_particlecloud
+
+
+
+    def get_random_particles(self, random_particle_count, xmin, xmax, ymin, ymax):
+        """
+        Place random particles in the map
+
+        :Args:
+            | random_particle_count (int): number of random particles to place
+            | xmin (float): minimum x coordinate
+            | xmax (float): maximum x coordinate
+            | ymin (float): minimum y coordinate
+            | ymax (float): maximum y coordinate
+        """
+        random_poses = []
+        for i in range(random_particle_count):
+            new_pose = Pose()
+            new_pose.position.x = random.uniform(xmin, xmax)
+            new_pose.position.y = random.uniform(ymin, ymax)
+            new_pose.orientation = rotateQuaternion(Quaternion(0, 0, 0, 1), random.uniform(-math.pi, math.pi))
+            random_poses.append(new_pose)
+
+        return random_poses
 
     def systematic_sampling(self, original_poses, weights, sample_count):
         sampled_poses = []
@@ -206,5 +231,7 @@ class PFLocaliser(PFLocaliserBase):
         estimated_pose.position.y = avg_y
         estimated_pose.orientation.z = avg_z
         estimated_pose.orientation.w = avg_w
+
+        # print("Estimated pose: ", estimated_pose.position.x, estimated_pose.position.y, getHeading(estimated_pose.orientation))
 
         return estimated_pose
