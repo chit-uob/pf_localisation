@@ -18,8 +18,8 @@ class PFLocaliser(PFLocaliserBase):
         
         # ----- Set motion model parameters
         self.INITIAL_PARTICLE_COUNT = 2000		# Number of particles to use
-        self.POSITION_STD_DEV = 5
-        self.ORIENTATION_STD_DEV = 5
+        self.POSITION_STD_DEV = 8
+        self.ORIENTATION_STD_DEV = 8
         self.ODOM_ROTATION_NOISE = 0.005 		# Odometry model rotation noise
         self.ODOM_TRANSLATION_NOISE = 0.01 	# Odometry x axis (forward) noise
         self.ODOM_DRIFT_NOISE = 0.005 			# Odometry y axis (side-side) noise
