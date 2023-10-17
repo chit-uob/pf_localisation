@@ -20,9 +20,9 @@ class PFLocaliser(PFLocaliserBase):
         self.INITIAL_PARTICLE_COUNT = 2000		# Number of particles to use
         self.POSITION_STD_DEV = 8
         self.ORIENTATION_STD_DEV = 8
-        self.ODOM_ROTATION_NOISE = 0.01 		# Odometry model rotation noise
+        self.ODOM_ROTATION_NOISE = 0.005 		# Odometry model rotation noise
         self.ODOM_TRANSLATION_NOISE = 0.01 	# Odometry x axis (forward) noise
-        self.ODOM_DRIFT_NOISE = 0.01 			# Odometry y axis (side-side) noise
+        self.ODOM_DRIFT_NOISE = 0.005 			# Odometry y axis (side-side) noise
  
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
@@ -231,6 +231,8 @@ class PFLocaliser(PFLocaliserBase):
         estimated_pose.position.y = avg_y
         estimated_pose.orientation.z = avg_z
         estimated_pose.orientation.w = avg_w
+
+        self.UPDATE_RANDOM_PARTICLE_COUNT = 0
 
         # print("Estimated pose: ", estimated_pose.position.x, estimated_pose.position.y, getHeading(estimated_pose.orientation))
 
