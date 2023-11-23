@@ -17,9 +17,9 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
-        self.INITIAL_PARTICLE_COUNT = 2000		# Number of particles to use
-        self.POSITION_STD_DEV = 8
-        self.ORIENTATION_STD_DEV = 8
+        self.INITIAL_PARTICLE_COUNT = 1000		# Number of particles to use
+        self.POSITION_STD_DEV = 1
+        self.ORIENTATION_STD_DEV = 1
         self.ODOM_ROTATION_NOISE = 0.005 		# Odometry model rotation noise
         self.ODOM_TRANSLATION_NOISE = 0.01 	# Odometry x axis (forward) noise
         self.ODOM_DRIFT_NOISE = 0.005 			# Odometry y axis (side-side) noise
@@ -27,10 +27,10 @@ class PFLocaliser(PFLocaliserBase):
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
 
-        self.UPDATE_COORD_SD = 0.1           # Laser scan sampling noise
-        self.UPDATE_ORIENT_SD = 0.1      # Laser scan orientation noise
-        self.UPDATE_PARTICLE_COUNT = 800    # Number of particles to update
-        self.UPDATE_RANDOM_PARTICLE_COUNT = 25 # Number of random particles to add
+        self.UPDATE_COORD_SD = 0.03           # Laser scan sampling noise
+        self.UPDATE_ORIENT_SD = 0.03      # Laser scan orientation noise
+        self.UPDATE_PARTICLE_COUNT = 400    # Number of particles to update
+        self.UPDATE_RANDOM_PARTICLE_COUNT = 0 # Number of random particles to add
 
         self.weights = []
 
